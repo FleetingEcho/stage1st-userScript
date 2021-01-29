@@ -93,7 +93,7 @@ async function Status() {
 		if (!credit || !userGroup) {
 			throw new Error('Logged out')
 		}
-		if (credit.indexOf('积分') >= 0 || userGroup.indexOf('用户组') >= 0) {
+		if (credit.includes('积分') || userGroup.includes('用户组')) {
 			log4Info(`Checked status, still logged in`)
 			await checkHomePage()
 		}
@@ -136,7 +136,7 @@ async function Reading(time: number) {
 		await page.waitForTimeout(time / 4) // Reading Time
 		log4Info(`Reading End`)
 		const url = await page.url()
-		if (url.indexOf(URL.Base_Url) < 0) {
+		if (!url.includes(URL.Base_Url)) {
 			await page.goBack()
 			await page.waitForTimeout(INFO.Loading_Time)
 		}
@@ -154,7 +154,7 @@ async function checkHomePage() {
 	try {
 		let urlTest = await page.url()
 		// checking location
-		if (urlTest.indexOf(URL.Base_Url) < 0) {
+		if (!urlTest.includes(URL.Base_Url)) {
 			await currentUrl()
 			log4Others(`checkHomePage running...  go to homePage`)
 			await page.goto(URL.Complete_Url)
@@ -203,6 +203,7 @@ async function ReadArticles(time: number, index: number) {
 		// Randomly open a blog
 		await selectArticle()
 		await Reading(time)
+		await checkHomePage()
 		log4Notice('Checking Credits now')
 
 		if (INFO.Check_Credit) {
@@ -270,7 +271,7 @@ async function checkCreditPage() {
 		const { credit, userGroup, username, change } = res
 		if (credit && userGroup && username) {
 			log4Others(`UserName is ${username}, change is ${change}`)
-			if (credit.indexOf('积分') >= 0 && change >= EMAIL.Email_Trigger) {
+			if (credit.includes('积分') && change >= EMAIL.Email_Trigger) {
 				//Send Email
 				if (EMAIL.Email_Open) {
 					Mail(credit, userGroup, username)
@@ -283,7 +284,7 @@ async function checkCreditPage() {
 
 		// Return to the HomePage
 		const url = await page.url()
-		if (url.indexOf(URL.Base_Url) < 0) {
+		if (!url.includes(URL.Base_Url)) {
 			await page.goBack()
 			await page.waitForTimeout(INFO.Loading_Time)
 		}

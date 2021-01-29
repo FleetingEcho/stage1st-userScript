@@ -110,7 +110,7 @@ function Status() {
             if (!credit || !userGroup) {
                 throw new Error('Logged out');
             }
-            if (credit.indexOf('积分') >= 0 || userGroup.indexOf('用户组') >= 0) {
+            if (credit.includes('积分') || userGroup.includes('用户组')) {
                 log4js_1.log4Info(`Checked status, still logged in`);
                 yield checkHomePage();
             }
@@ -158,7 +158,7 @@ function Reading(time) {
             yield page.waitForTimeout(time / 4); // Reading Time
             log4js_1.log4Info(`Reading End`);
             const url = yield page.url();
-            if (url.indexOf(userInfo_1.URL.Base_Url) < 0) {
+            if (!url.includes(userInfo_1.URL.Base_Url)) {
                 yield page.goBack();
                 yield page.waitForTimeout(userInfo_1.INFO.Loading_Time);
             }
@@ -178,7 +178,7 @@ function checkHomePage() {
         try {
             let urlTest = yield page.url();
             // checking location
-            if (urlTest.indexOf(userInfo_1.URL.Base_Url) < 0) {
+            if (!urlTest.includes(userInfo_1.URL.Base_Url)) {
                 yield currentUrl();
                 log4js_1.log4Others(`checkHomePage running...  go to homePage`);
                 yield page.goto(userInfo_1.URL.Complete_Url);
@@ -232,6 +232,7 @@ function ReadArticles(time, index) {
             // Randomly open a blog
             yield selectArticle();
             yield Reading(time);
+            yield checkHomePage();
             log4js_1.log4Notice('Checking Credits now');
             if (userInfo_1.INFO.Check_Credit) {
                 yield checkCreditPage();
@@ -303,7 +304,7 @@ function checkCreditPage() {
             const { credit, userGroup, username, change } = res;
             if (credit && userGroup && username) {
                 log4js_1.log4Others(`UserName is ${username}, change is ${change}`);
-                if (credit.indexOf('积分') >= 0 && change >= userInfo_1.EMAIL.Email_Trigger) {
+                if (credit.includes('积分') && change >= userInfo_1.EMAIL.Email_Trigger) {
                     //Send Email
                     if (userInfo_1.EMAIL.Email_Open) {
                         mailer_1.default(credit, userGroup, username);
@@ -315,7 +316,7 @@ function checkCreditPage() {
             }
             // Return to the HomePage
             const url = yield page.url();
-            if (url.indexOf(userInfo_1.URL.Base_Url) < 0) {
+            if (!url.includes(userInfo_1.URL.Base_Url)) {
                 yield page.goBack();
                 yield page.waitForTimeout(userInfo_1.INFO.Loading_Time);
             }
