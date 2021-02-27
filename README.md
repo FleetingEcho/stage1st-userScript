@@ -8,6 +8,14 @@
 
 
 
+## Classification
+
+1. **Functional_Version**
+   1. Support for custom extensions for other functions, such as recording article content and  specifying crawling a separate article.
+2. **Stable_Version** 
+   1. Without performing article reading (may cause navigation problems), cut out some unnecessary features and focus on daily credit.
+   2. Just for the purpose of constantly checking user points and then counting it in the logs.
+
 ## Features
 
 + Keeping user account online 24/7 to increase "online-time" points.
@@ -95,7 +103,7 @@ export const EMAIL: _EMAIL = {
 	Email_Address: 'xxxxxx@gmail.com',          // Sender's email 
 	Email_Service: 'Gmail',                     // Email Service,Gmail for example
 	Smtp_Pass: 'xxxxxxxxxx',                    // Sender's SMTP pass
-	Email_To: 'xxxxxx@gmail.com',	            // Receiver's email address
+	Email_To: 'xxxxxx@gmail.com',	            // Receiver's email address,string or an array.
 }
 //VALIDATION PROCESS IS IN TESTING,PLEASE MAKE SURE YOUR SECURITY QUESTIONS HAVE BEEN CANCELED.
 export const SECURE: _SECURE = {
