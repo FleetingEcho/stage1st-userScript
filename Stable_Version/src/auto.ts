@@ -31,7 +31,7 @@ const Init = async () => {
 			})
 		}
 		log4Info(`Service started successfully`)
-		await page.goto(URL.Complete_Url)
+		await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
 		await page.waitForTimeout(INFO.Loading_Time)
 		log4Notice('Entered the Home page')
 		LoggerCredit.info(`Successfully started browser!`)
@@ -100,7 +100,7 @@ async function checkHomePage() {
 		let urlTest = await page.url()
 		if (!urlTest.includes(URL.Base_Url)) {
 			log4Others(`checkHomePage running...  go to homePage`)
-			await page.goto(URL.Complete_Url)
+			await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
 			await page.waitForTimeout(INFO.Loading_Time)
 		}
 	} catch (err) {
@@ -117,7 +117,7 @@ function timerBFunc(index: number) {
 			await page.close()
 			page = await browser.newPage()
 			log4Info(`Service restarted successfully`)
-			await page.goto(URL.Complete_Url)
+			await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
 			await page.waitForTimeout(INFO.Loading_Time)
 			log4Info('Entered the login page')
 			try {
@@ -161,6 +161,7 @@ async function ReadArticles(time: number, index: number) {
 
 async function refreshCredit() {
 	try {
+		await page.waitForSelector(`#extcreditmenu`)
 		await page.click(`#extcreditmenu`, { delay: 100 })
 		await page.waitForTimeout(INFO.Loading_Time)
 		const credit = await page.$eval(`#extcreditmenu`, (el) => el.textContent)
@@ -219,9 +220,9 @@ async function checkCreditPage() {
 		}
 
 		// Return to the HomePage
-		const url = await page.url()
+		const url = page.url()
 		if (!url.includes(URL.Base_Url)) {
-			await page.goto(URL.Complete_Url)
+			await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
 			await page.waitForTimeout(INFO.Loading_Time)
 		}
 	} catch (err) {
@@ -238,13 +239,13 @@ async function _Error(err: unknown) {
 		await Status() //Check user status
 		log4Error(err)
 		log4Info(`Good news, you are still logged in!`)
-		await page.goto(URL.Complete_Url)
+		await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
 		await page.waitForTimeout(INFO.Loading_Time)
 		await ReadArticlesTimeout() // reset timeout
 	} catch (err) {
-		if (browser || page) {
+		if (browser) {
 			log4Error(err)
-			await page.close()
+			page && (await page.close())
 			await browser.close()
 			log4Info(`Browser has been closed`)
 		}
