@@ -79,8 +79,12 @@ export const URL: _URL = {
 	Complete_Url: 'https://bbs.saraba1st.com/2b/forum-75-1.html', //HomePage address
 	Base_Url: '2b/forum-75-1', //used for address validation.
 }
-
+enum SERVER_CHROME_PATH {
+	Snap = '/snap/bin/chromium',
+	Usr = '/usr/bin/chromium',
+}
 export const INFO: _INFO = {
+    Server_Chrome_Path: SERVER_CHROME_PATH.Snap,  // chromium path
 	UserName: 'Jake Zhang',                     // Username
 	Password: 'my password',                    // Password
     // ---PLEASE MAKE SURE YOU HAVE CANCELED YOUR VALIDATION QUESTIONS.---
@@ -105,13 +109,6 @@ export const EMAIL: _EMAIL = {
 	Smtp_Pass: 'xxxxxxxxxx',                    // Sender's SMTP pass
 	Email_To: 'xxxxxx@gmail.com',	            // Receiver's email address,string or an array.
 }
-//VALIDATION PROCESS IS IN TESTING,PLEASE MAKE SURE YOUR SECURITY QUESTIONS HAVE BEEN CANCELED.
-export const SECURE: _SECURE = {
-	SecurityCheck: false,                       // TESTING => Not stable
-	SecurityQuestionIndex: 5,
-	SecurityAnswer: 'XXX',
-}
-
 
 ```
 

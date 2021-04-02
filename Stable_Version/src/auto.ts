@@ -1,7 +1,7 @@
 import * as puppeteer from 'puppeteer'
 import Mail from './mailer'
 import { INFO, EMAIL, URL } from './userInfo'
-import { Logger, LoggerCredit, LoggerErr, log4Error, log4Info, log4Notice, log4Others } from './log4js'
+import { Logger, LoggerCount, LoggerErr, log4Error, log4Info, log4Notice, log4Others } from './log4js'
 let browser: puppeteer.Browser
 let page: puppeteer.Page
 let timer: NodeJS.Timer
@@ -19,7 +19,11 @@ const Init = async () => {
 				: (browser = await puppeteer.launch({ headless: false, ignoreHTTPSErrors: true, defaultViewport: { width: 1200, height: 960 } }))
 		} else {
 			// Running on the server
-			browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'], executablePath: '/usr/bin/chromium' })
+			browser = await puppeteer.launch({
+				headless: true,
+				args: ['--no-sandbox'],
+				executablePath: INFO.Server_Chrome_Path,
+			})
 		}
 		page = await browser.newPage()
 		if (INFO.Local) {
@@ -31,10 +35,10 @@ const Init = async () => {
 			})
 		}
 		log4Info(`Service started successfully`)
-		await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
+		await page.goto(URL.Complete_Url, { waitUntil: 'domcontentloaded', timeout: 0 })
 		await page.waitForTimeout(INFO.Loading_Time)
 		log4Notice('Entered the Home page')
-		LoggerCredit.info(`Successfully started browser!`)
+		LoggerCount.info(`Successfully started browser!`)
 	} catch (err) {
 		Logger.debug(err)
 		log4Error('Failed to Init browser')
@@ -59,15 +63,15 @@ async function Login() {
 }
 
 // Read article Timeout.
-let ReadArticlesTimeout = async (countDown = INFO.Time_Gap, i = 0) => {
+let AnalyzerTimeout = async (countDown = 0, i = 0) => {
 	if (timer) clearTimeout(timer)
 	if (timerB) clearTimeout(timerB)
 	timer = setTimeout(async () => {
 		try {
 			i++
 			log4Notice(`Reading article ${i}`)
-			await ReadArticles(INFO.Default_Time, i)
-			await ReadArticlesTimeout(countDown, i)
+			await Analyzer(INFO.Default_Time, i)
+			await AnalyzerTimeout(countDown, i)
 		} catch (err) {
 			log4Info(`Timeout error`)
 			Logger.debug(err)
@@ -109,26 +113,29 @@ async function checkHomePage() {
 	}
 }
 function timerBFunc(index: number) {
+	if (timer) clearTimeout(timer)
 	timerB = setTimeout(async () => {
 		if (!page || !browser) throw new Error(`Browser or page didn't response`)
 		log4Error('Back up timer online')
 		log4Error('timerB working...')
 		try {
-			await page.close()
-			page = await browser.newPage()
-			log4Info(`Service restarted successfully`)
-			await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
-			await page.waitForTimeout(INFO.Loading_Time)
-			log4Info('Entered the login page')
-			try {
-				await Status()
-			} catch (err) {
-				await Login()
+			if (page) {
+				await page.close()
+				page = await browser.newPage()
+				log4Info(`Service restarted successfully`)
+				await page.goto(URL.Complete_Url, { waitUntil: 'domcontentloaded', timeout: 0 })
+				await page.waitForTimeout(INFO.Loading_Time)
+				log4Info('Entered the login page')
+				try {
+					await Status()
+				} catch (err) {
+					Login()
+				}
 			}
-			await ReadArticlesTimeout(INFO.Time_Gap, index)
+			await AnalyzerTimeout(INFO.Time_Gap, index)
 		} catch (err) {
 			if (!timerB) {
-				await _Error(err)
+				await Reboot(err)
 			}
 		}
 	}, INFO.Default_Time * 2)
@@ -136,7 +143,7 @@ function timerBFunc(index: number) {
 }
 
 // Read Blogs
-async function ReadArticles(time: number, index: number) {
+async function Analyzer(time: number, index: number) {
 	try {
 		log4Info(`-------------------Start-------------------`)
 		await checkHomePage()
@@ -145,7 +152,15 @@ async function ReadArticles(time: number, index: number) {
 		await Status()
 		timerBFunc(index) // vital BackUp!
 		log4Notice('Checking Credits now')
-		await checkCreditPage()
+		if (page && page.url().includes('bbs.saraba1st.com/')) {
+			await checkCreditPage()
+		} else {
+			if (timerB) {
+				clearTimeout(timerB)
+				log4Others('Back up timerB successfully deleted')
+			}
+			throw new Error('page has been closed, failed to run checkCreditPage')
+		}
 		if (timerB) {
 			clearTimeout(timerB)
 			log4Others('Back up timerB successfully deleted')
@@ -155,13 +170,13 @@ async function ReadArticles(time: number, index: number) {
 	} catch (err) {
 		Logger.debug(err)
 		log4Error('Failed to read target article')
-		await _Error(err)
+		await Reboot(err)
 	}
 }
 
 async function refreshCredit() {
 	try {
-		await page.waitForSelector(`#extcreditmenu`)
+		if (!page) throw 'page has closed'
 		await page.click(`#extcreditmenu`, { delay: 100 })
 		await page.waitForTimeout(INFO.Loading_Time)
 		const credit = await page.$eval(`#extcreditmenu`, (el) => el.textContent)
@@ -173,7 +188,7 @@ async function refreshCredit() {
 		const change_Record = newCredit - Temp_Credit
 		idx++
 		if (idx >= INFO.Record_Trigger && INFO.Record_Credit) {
-			LoggerCredit.info(`New credit is ${newCredit}`)
+			LoggerCount.info(`New credit is ${newCredit}`)
 			idx = 0
 		}
 		if (change_Record >= INFO.Record_Trigger) {
@@ -201,6 +216,7 @@ async function refreshCredit() {
 // check user credit
 async function checkCreditPage() {
 	try {
+		if (!page) throw 'page not exist'
 		const res = await refreshCredit()
 		if (!res) {
 			throw new Error('res in checkCreditPage is undefined')
@@ -215,7 +231,7 @@ async function checkCreditPage() {
 					log4Others(`Successfully sent e-mail`)
 				}
 				Default_Credit = Number(credit.substring(4))
-				LoggerCredit.info(`Credit has increased to ${Default_Credit}`)
+				LoggerCount.info(`Credit has increased to ${Default_Credit}`)
 			}
 		}
 
@@ -228,20 +244,21 @@ async function checkCreditPage() {
 	} catch (err) {
 		Logger.debug(err)
 		log4Error('Failed to check credit')
-		await _Error(err)
+		await Reboot(err)
 	}
 }
 
-async function _Error(err: unknown) {
+async function Reboot(err: unknown) {
 	try {
-		if (!browser || !page) throw new Error('Critical Error Occurs')
+		if (timer) clearTimeout(timer)
+		if (timerB) clearTimeout(timerB)
+		if (!browser) throw new Error('Critical Error Occurs')
+		if (!page) throw new Error('Reboot Log: page has been closed')
 		LoggerErr.error(err)
-		await Status() //Check user status
 		log4Error(err)
 		log4Info(`Good news, you are still logged in!`)
-		await page.goto(URL.Complete_Url, { waitUntil: 'load', timeout: 0 })
-		await page.waitForTimeout(INFO.Loading_Time)
-		await ReadArticlesTimeout() // reset timeout
+		page && (await Status())
+		await AnalyzerTimeout(INFO.Time_Gap, 0)
 	} catch (err) {
 		if (browser) {
 			log4Error(err)
@@ -249,13 +266,8 @@ async function _Error(err: unknown) {
 			await browser.close()
 			log4Info(`Browser has been closed`)
 		}
-		if (timer) clearTimeout(timer)
-		if (timerB) {
-			clearTimeout(timerB)
-			log4Others('Back up timerB successfully deleted in Error Func')
-		}
 		await sleep(INFO.Default_Time / 4)
-		await Main()
+		Main()
 	}
 }
 async function sleep(delay: number) {
@@ -266,9 +278,9 @@ async function Main() {
 	try {
 		await Init()
 		await Login()
-		await ReadArticlesTimeout()
+		await AnalyzerTimeout()
 	} catch (err) {
-		await _Error(err)
+		await Reboot(err)
 	}
 }
 

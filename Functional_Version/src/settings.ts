@@ -1,45 +1,18 @@
 const min: number = 60000
 const seconds: number = 1000
-interface _INFO {
-	UserName: string
-	Password: string
-	Local: boolean
-	Slow_Mode: boolean
-	Default_Time: number
-	Time_Gap: number
-	Loading_Time: number
-	Logger: boolean
-	Record_Trigger: number
+import { _EMAIL, _INFO, _SECURE, _URL } from './utils/types'
 
-	Record_Blogs: boolean
-	Record_Credit: boolean
-	Check_Credit: boolean
-	Reload_HomePage: boolean
+enum SERVER_CHROME_PATH {
+	Snap = '/snap/bin/chromium',
+	Usr = '/usr/bin/chromium',
 }
-interface _EMAIL {
-	Email_Open: boolean
-	Email_Trigger: number
-	Email_Address: string
-	Email_Service: string
-	Smtp_Pass: string
-	Email_To: string
-}
-interface _SECURE {
-	SecurityCheck: boolean
-	SecurityQuestionIndex: number
-	SecurityAnswer: string
-}
-interface _URL {
-	Complete_Url: string
-	Base_Url: string
-}
-
 export const URL: _URL = {
 	Complete_Url: 'https://bbs.saraba1st.com/2b/forum-75-1.html',
 	Base_Url: '/2b/forum-75-1',
 }
 
 export const INFO: _INFO = {
+	Server_Chrome_Path: SERVER_CHROME_PATH.Snap,
 	UserName: 'Jake Zhang', // username
 	Password: 'my password', //password
 	// ---PLEASE MAKE SURE YOU HAVE CANCELED YOUR VALIDATION QUESTIONS.---
